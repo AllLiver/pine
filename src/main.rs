@@ -1,5 +1,5 @@
 use clap::Parser;
-use crossterm::event::{read, Event, KeyCode, KeyEvent, ModifierKeyCode};
+use crossterm::event::{read, Event, KeyCode, KeyEvent};
 use std::io::{stdout, Read, Write};
 use crossterm::{cursor, terminal, ExecutableCommand, QueueableCommand};
 use std::fs::File;

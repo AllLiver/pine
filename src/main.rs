@@ -37,6 +37,8 @@ async fn main() {
     let mut buf = String::new();
     buf_reader.read_to_string(&mut buf).unwrap_or(1);
 
+    let mut buf_vec: Vec<Vec<char>> = buf.split("\n").map(|x| x.chars().collect()).collect();
+
     term.move_cursor(0, 0);
     println!("pico || {}", args.file);
 
@@ -52,6 +54,14 @@ async fn main() {
 
     term.move_cursor(0, term.size.y - 1);
     print!("exit: ctrl + c");
+
+    term.move_cursor(0, 2);
+    for x in 0..buf_vec.len() {
+        for i in buf_vec[x].clone() {
+            print!("{}", i);
+        }
+        term.move_cursor(0, 3 + x as u16);
+    }
 
     term.flush();
 

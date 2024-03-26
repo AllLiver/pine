@@ -1,4 +1,5 @@
 use clap::Parser;
+use crossterm::event::{read, Event, KeyCode};
 use std::io::{stdout, Read, Write};
 use crossterm::{cursor, terminal, ExecutableCommand, QueueableCommand};
 use std::fs::File;
@@ -17,6 +18,7 @@ struct Args {
 async fn main() {
     stdout().execute(crossterm::cursor::DisableBlinking).unwrap();
     stdout().execute(crossterm::terminal::EnterAlternateScreen).unwrap();
+    crossterm::terminal::enable_raw_mode().unwrap();
     let args = Args::parse();
     let term = Terminal::new(crossterm::terminal::size().unwrap());
     term.clear();
@@ -35,10 +37,32 @@ async fn main() {
     let mut buf = String::new();
     buf_reader.read_to_string(&mut buf).unwrap_or(1);
 
-    term.move_cursor(1, 1);
-    for i in 0..term.size.x {
+    term.move_cursor(0, 0);
+    println!("pico || {}", args.file);
 
+    term.move_cursor(0, 1);
+    for _ in 0..term.size.x {
+        print!("-");
     }
+
+    term.move_cursor(0, 3);
+
+    term.flush();
+
+    loop {
+        if let Event::Key(event) = read().unwrap() {
+            match event.code {
+                KeyCode::Up => stdout().queue(crossterm::cursor::MoveUp).unwrap(),
+                KeyCode::Down => stdout().queue(crossterm::cursor::MoveUp).unwrap(),
+                KeyCode::Left => stdout().queue(crossterm::cursor::MoveUp).unwrap(),
+                KeyCode::Right => stdout().queue(crossterm::cursor::MoveUp).unwrap(),
+                KeyCode::Char('q') => break, // quit on 'q'
+                _ => (),
+            }
+        }
+    }
+   
+    crossterm::terminal::disable_raw_mode().unwrap();
     stdout().execute(crossterm::terminal::LeaveAlternateScreen).unwrap();
 }
 

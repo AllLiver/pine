@@ -1,5 +1,5 @@
 use clap::Parser;
-use crossterm::event::{read, Event, KeyCode};
+use crossterm::event::{read, Event, KeyCode, KeyEvent, ModifierKeyCode};
 use std::io::{stdout, Read, Write};
 use crossterm::{cursor, terminal, ExecutableCommand, QueueableCommand};
 use std::fs::File;
@@ -45,22 +45,41 @@ async fn main() {
         print!("-");
     }
 
-    term.move_cursor(0, 3);
+    term.move_cursor(0, term.size.y - 2);
+    for _ in 0..term.size.x {
+        print!("-");
+    }
+
+    term.move_cursor(0, term.size.y - 1);
+    print!("exit: ctrl + c");
 
     term.flush();
 
     loop {
-        if let Event::Key(event) = read().unwrap() {
-            match event.code {
-                KeyCode::Up => stdout().queue(crossterm::cursor::MoveUp).unwrap(),
-                KeyCode::Down => stdout().queue(crossterm::cursor::MoveUp).unwrap(),
-                KeyCode::Left => stdout().queue(crossterm::cursor::MoveUp).unwrap(),
-                KeyCode::Right => stdout().queue(crossterm::cursor::MoveUp).unwrap(),
-                KeyCode::Char('q') => break, // quit on 'q'
-                _ => (),
-            }
+        match read().unwrap() {
+            Event::Key(KeyEvent { code, modifiers, .. }) => {
+                match code {
+                    KeyCode::Up => { stdout().execute(crossterm::cursor::MoveUp(1)).unwrap(); }
+                    KeyCode::Down => { stdout().execute(crossterm::cursor::MoveDown(1)).unwrap(); }
+                    KeyCode::Left => { stdout().execute(crossterm::cursor::MoveLeft(1)).unwrap(); }
+                    KeyCode::Right => { stdout().execute(crossterm::cursor::MoveRight(1)).unwrap(); }
+                    KeyCode::Char(c) => { 
+                        match c {
+                            'c' => {
+                                match modifiers {
+                                    crossterm::event::KeyModifiers::CONTROL => { break; }
+                                    _ => {}
+                                }
+                            },
+                            _ => ()
+                        }
+                    }
+                    _ => {}
+                }
+            },
+            _ => {}
         }
-    }
+    } 
    
     crossterm::terminal::disable_raw_mode().unwrap();
     stdout().execute(crossterm::terminal::LeaveAlternateScreen).unwrap();

@@ -100,8 +100,16 @@ fn main() -> Result<()> {
                 } // Routes for input modifiers
                 
                 match e.code { // Routes for single keys
-                    KeyCode::Up => { term.move_relative(0, -1); },
-                    KeyCode::Down => { term.move_relative(0, 1); },
+                    KeyCode::Up => {
+                        if term.pos.y != 2 {
+                            term.move_relative(0, -1); 
+                        }
+                    },
+                    KeyCode::Down => {
+                        if term.pos.y != term.size.y - 3 {
+                            term.move_relative(0, 1);
+                        }
+                    },
                     KeyCode::Left => { term.move_relative(-1, 0); },
                     KeyCode::Right => { term.move_relative(1, 0) }
                     _ => {}

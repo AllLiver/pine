@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
 use clap::Parser;
-use crossterm::{cursor, terminal, ExecutableCommand, QueueableCommand};
+use crossterm::{cursor, event, terminal, ExecutableCommand, QueueableCommand};
+use crossterm::event::Event;
+use std::char;
 use std::fs::File;
 use std::io::{stdout, BufReader, Read, Write};
 
@@ -78,7 +80,28 @@ fn main() -> Result<()> {
     // Flush all terminal prints
     term.flush();
 
-    loop {}
+    // App loop
+    loop {
+        match event::read().context("Could not read user input")? {
+            Event::Key(e) => { // Inputs for all key events
+                match e.modifiers { // Routes for the input modifiers (ctrl in ctrl + c)
+                    event::KeyModifiers::CONTROL => { // Routes for ctrl modifiers
+                        match e.code { 
+                            event::KeyCode::Char(c) => { // Routes for ctrl + char inputs
+                                match c {
+                                    'c' => { break; },
+                                    _ => {}
+                                }
+                            },
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            },
+            _ => {}
+        }
+    }
 
     // region:  -- Shutdown
 

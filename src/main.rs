@@ -37,7 +37,7 @@ fn main() -> Result<()> {
 
     let mut buf: Vec<Vec<char>> = buf
         .split("\n")
-        .map(|x| x.trim().chars().collect())
+        .map(|x| x.chars().collect())
         .collect(); // Chop up file contents into chars
 
     // Switch terminal modes

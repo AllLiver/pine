@@ -1,9 +1,9 @@
 use clap::Parser;
-use crossterm::event::{read, Event, KeyCode, KeyEvent};
 use std::io::{stdout, Read, Write};
-use crossterm::{cursor, terminal, ExecutableCommand, QueueableCommand};
+use crossterm::{cursor, terminal, QueueableCommand};
 use std::fs::File;
 use std::io::BufReader;
+use anyhow::{Context, Result};
 
 /// Simple CLI text editor
 #[derive(Parser, Debug)]
@@ -14,85 +14,23 @@ struct Args {
     file: String,
 }
 
-#[tokio::main]
-async fn main() {
-    stdout().execute(crossterm::cursor::DisableBlinking).unwrap();
-    stdout().execute(crossterm::terminal::EnterAlternateScreen).unwrap();
-    crossterm::terminal::enable_raw_mode().unwrap();
-    let args = Args::parse();
+fn main() -> Result<()> {
     let term = Terminal::new(crossterm::terminal::size().unwrap());
-    term.clear();
-    term.set_name("pico");
-
-    let file = match File::open(&args.file) {
-        Ok(f) => f,
-        Err(_) => {
-            File::create(&args.file).unwrap()
+    let args = Args::parse();
+    let file = match File::open(&args.file) { // Attempt to open file
+        Ok(f) => f, // If file opens, return it
+        Err(_) => { // If it does not, create it and return that
+            File::create(&args.file).context("Could not create file")?
         }
     };
 
-    term.set_name(&format!("pico - {}", args.file));
-
-    let mut buf_reader = BufReader::new(file);
+    let mut buf_reader = BufReader::new(file); // Create a new BufReader for the file
     let mut buf = String::new();
-    buf_reader.read_to_string(&mut buf).unwrap_or(1);
+    buf_reader.read_to_string(&mut buf).context("Could not read file buffer")?; // Read to a string
 
-    let mut buf_vec: Vec<Vec<char>> = buf.split("\n").map(|x| x.chars().collect()).collect();
+    let mut buf: Vec<Vec<char>> = buf.split("\n").map(|x| x.chars().collect()).collect();
 
-    term.move_cursor(0, 0);
-    println!("pico || {}", args.file);
-
-    term.move_cursor(0, 1);
-    for _ in 0..term.size.x {
-        print!("-");
-    }
-
-    term.move_cursor(0, term.size.y - 2);
-    for _ in 0..term.size.x {
-        print!("-");
-    }
-
-    term.move_cursor(0, term.size.y - 1);
-    print!("exit: ctrl + c");
-
-    term.move_cursor(0, 2);
-    for x in 0..buf_vec.len() {
-        for i in buf_vec[x].clone() {
-            print!("{}", i);
-        }
-        term.move_cursor(0, 3 + x as u16);
-    }
-
-    term.flush();
-
-    loop {
-        match read().unwrap() {
-            Event::Key(KeyEvent { code, modifiers, .. }) => {
-                match code {
-                    KeyCode::Up => { stdout().execute(crossterm::cursor::MoveUp(1)).unwrap(); }
-                    KeyCode::Down => { stdout().execute(crossterm::cursor::MoveDown(1)).unwrap(); }
-                    KeyCode::Left => { stdout().execute(crossterm::cursor::MoveLeft(1)).unwrap(); }
-                    KeyCode::Right => { stdout().execute(crossterm::cursor::MoveRight(1)).unwrap(); }
-                    KeyCode::Char(c) => { 
-                        match c {
-                            'c' => {
-                                match modifiers {
-                                    crossterm::event::KeyModifiers::CONTROL => { break; }
-                                    _ => {}
-                                }
-                            },
-                            _ => ()
-                        }
-                    }
-                    _ => {}
-                }
-            },
-            _ => {}
-        }
-    } 
-   
-    crossterm::terminal::disable_raw_mode().unwrap();
-    stdout().execute(crossterm::terminal::LeaveAlternateScreen).unwrap();
+    Ok(()) // Return Ok if everything executes fine
 }
 
 #[derive(Debug)]

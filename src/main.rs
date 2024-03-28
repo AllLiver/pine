@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use crossterm::{cursor, event, terminal, ExecutableCommand, QueueableCommand};
-use crossterm::event::Event;
+use crossterm::event::{Event, KeyCode};
 use std::char;
 use std::fs::File;
 use std::io::{stdout, BufReader, Read, Write};
@@ -18,7 +18,7 @@ struct Args {
 fn main() -> Result<()> {
     // region:  -- Startup
 
-    let term = Terminal::new(crossterm::terminal::size().unwrap());
+    let mut term = Terminal::new(crossterm::terminal::size().unwrap());
     let args = Args::parse();
     let file = match File::open(&args.file) {
         // Attempt to open file
@@ -94,11 +94,19 @@ fn main() -> Result<()> {
                                 }
                             },
                             _ => {}
-                        }
-                    }
+                        } 
+                    } // Routes for ctrl modifiers
                     _ => {}
-                }
-            },
+                } // Routes for input modifiers
+                
+                match e.code { // Routes for single keys
+                    KeyCode::Up => { term.move_relative(0, -1); },
+                    KeyCode::Down => { term.move_relative(0, 1); },
+                    KeyCode::Left => { term.move_relative(-1, 0); },
+                    KeyCode::Right => { term.move_relative(1, 0) }
+                    _ => {}
+                } // Routes for single keys
+            }, // Inputs for all key events
             _ => {}
         }
     }
@@ -123,8 +131,15 @@ struct Size {
 }
 
 #[derive(Debug)]
+struct Pos {
+    x: u16,
+    y: u16
+}
+
+#[derive(Debug)]
 struct Terminal {
     size: Size,
+    pos: Pos
 }
 
 impl Terminal {
@@ -134,6 +149,10 @@ impl Terminal {
                 x: size.0,
                 y: size.1,
             },
+            pos: Pos {
+                x: 0,
+                y: 0
+            }
         }
     }
 
@@ -147,8 +166,24 @@ impl Terminal {
         stdout().queue(crossterm::terminal::SetTitle(name)).unwrap();
     }
 
-    fn move_cursor(&self, posx: u16, posy: u16) {
-        stdout().queue(cursor::MoveTo(posx, posy)).unwrap();
+    fn move_cursor(&mut self, posx: u16, posy: u16) {
+        self.pos.x = posx;
+        self.pos.y = posy;
+        stdout().execute(cursor::MoveTo(posx, posy)).unwrap();
+    }
+
+    fn move_relative(&mut self, relx: i16, rely: i16) {
+        let mut posx = self.pos.x as i16;
+        let mut posy = self.pos.y as i16;
+        if posx + relx >= 0 && posx + relx <= self.size.x as i16 {
+            posx += relx;
+        }
+
+        if posy + rely >= 0 && posy + rely <= self.size.y as i16 {
+            posy += rely;
+        }
+
+        self.move_cursor(posx as u16, posy as u16);
     }
 
     fn flush(&self) {

@@ -4,6 +4,7 @@ use crossterm::{cursor, event, terminal, ExecutableCommand, QueueableCommand};
 use crossterm::event::{Event, KeyCode};
 use std::char;
 use std::fs::File;
+use std::path::Path;
 use std::io::{stdout, BufReader, Read, Write};
 
 /// Simple CLI text editor
@@ -18,27 +19,39 @@ struct Args {
 fn main() -> Result<()> {
     // region:  -- Startup
 
+    let mut file_created = false;
+
     let mut term = Terminal::new(crossterm::terminal::size().unwrap());
     let args = Args::parse();
-    let file = match File::open(&args.file) {
+    let file = match File::open(Path::new(&args.file)) {
         // Attempt to open file
         Ok(f) => f, // If file opens, return it
         Err(_) => {
             // If it does not, create it and return that
-            File::create(&args.file).context("Could not create file")?
+            file_created = true;
+            File::create(Path::new(&args.file)).context("Could not create file")?
         }
     };
 
-    let mut buf_reader = BufReader::new(file); // Create a new BufReader for the file
-    let mut buf = String::new();
-    buf_reader
-        .read_to_string(&mut buf)
-        .context("Could not read file buffer")?; // Read to a string
+    let mut buf: Vec<Vec<char>> = vec![Vec::new()];
 
-    let mut buf: Vec<Vec<char>> = buf
-        .split("\n")
-        .map(|x| x.chars().collect())
-        .collect(); // Chop up file contents into chars
+    if !file_created {
+
+        let mut buf_str = String::new();
+
+        let mut buf_reader = BufReader::new(file); // Create a new BufReader for the file
+        buf_reader
+            .read_to_string(&mut buf_str)
+            .context("Could not read file buffer")?; // Read to a string
+
+        buf = buf_str
+            .split("\n")
+            .map(|x| x.chars().collect())
+            .collect(); // Chop up file contents into chars
+
+    } else {
+        buf[0].push(' ');
+    }
 
     // Switch terminal modes
     crossterm::terminal::enable_raw_mode().context("Could not enable raw mode")?;
@@ -71,14 +84,20 @@ fn main() -> Result<()> {
     // Print file buffer
     term.move_cursor(0, 2);
     for i in 0..buf.len() {
-        for x in buf[i].clone() {
-            print!("{}", x);
+        if 3 + (i as u16) < term.size.y - 1 {
+            for x in buf[i].clone() {
+                print!("{}", x);
+            }
+            term.move_cursor(0, 3 + i as u16);
         }
-        term.move_cursor(0, 3 + i as u16);
     }
+
+    term.move_cursor(buf[buf.len() - 1].len() as u16, (buf.len() + 1) as u16);
 
     // Flush all terminal prints
     term.flush();
+
+    let mut buf_x_pos = term.pos.x;
 
     // App loop
     loop {
@@ -101,17 +120,23 @@ fn main() -> Result<()> {
                 
                 match e.code { // Routes for single keys
                     KeyCode::Up => {
-                        if term.pos.y != 2 {
-                            term.move_relative(0, -1); 
+                        if term.pos.y != 2 {  
+                            if buf_x_pos <  {
+                                term.move_relative(0, -1);
+                            }
                         }
                     },
                     KeyCode::Down => {
-                        if term.pos.y != term.size.y - 3 {
+                        if term.pos.y != term.size.y - 3 && term.pos.y - 1 < buf.len() as u16 {
                             term.move_relative(0, 1);
                         }
                     },
                     KeyCode::Left => { term.move_relative(-1, 0); },
-                    KeyCode::Right => { term.move_relative(1, 0) }
+                    KeyCode::Right => {
+                        if term.pos.x + 1 < (buf[(term.pos.y - 2) as usize].len() + 1) as u16 {
+                            term.move_relative(1, 0); 
+                        }
+                    }
                     _ => {}
                 } // Routes for single keys
             }, // Inputs for all key events

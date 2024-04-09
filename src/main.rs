@@ -121,9 +121,9 @@ fn main() -> Result<()> {
                 match e.code { // Routes for single keys
                     KeyCode::Up => {
                         if term.pos.y != 2 {  
-                            if buf_x_pos <  {
+                            // if buf_x_pos <  {
                                 term.move_relative(0, -1);
-                            }
+                            // }
                         }
                     },
                     KeyCode::Down => {

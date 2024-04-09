@@ -119,6 +119,9 @@ fn main() -> Result<()> {
                 } // Routes for input modifiers
                 
                 match e.code { // Routes for single keys
+                    KeyCode::Enter => {
+                        buf.insert((term.pos.y - 1) as usize, Vec::new());
+                    },
                     KeyCode::Up => {
                         if term.pos.y != 2 {  
                             term.move_relative(0, -1);

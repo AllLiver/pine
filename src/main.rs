@@ -121,6 +121,7 @@ fn main() -> Result<()> {
                 match e.code { // Routes for single keys
                     KeyCode::Enter => {
                         buf.insert((term.pos.y - 1) as usize, Vec::new());
+                        term.redraw_buf(buf);
                     },
                     KeyCode::Up => {
                         if term.pos.y != 2 {  
@@ -219,6 +220,23 @@ impl Terminal {
         stdout()
             .queue(terminal::Clear(terminal::ClearType::All))
             .unwrap();
+    }
+
+    fn redraw_buf(&mut self, buf: Vec<Vec<char>>) {
+        let start_x = self.pos.x;
+        let start_y = self.pos.y;
+
+        self.move_cursor(0, 2);
+        for i in 0..buf.len() {
+            if 3 + (i as u16) < self.size.y - 1 {
+                for x in buf[i].clone() {
+                    print!("{}", x);
+                }
+                self.move_cursor(0, 3 + i as u16);
+            }
+        }
+
+        self.move_cursor(start_x, start_y);
     }
 
     fn set_name(&self, name: &str) {

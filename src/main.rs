@@ -3,7 +3,7 @@ use clap::Parser;
 use crossterm::{cursor, event, terminal, ExecutableCommand, QueueableCommand};
 use crossterm::event::{Event, KeyCode};
 use std::char;
-use std::fs::File;
+use std::fs::{File, write};
 use std::path::Path;
 use std::io::{stdout, BufReader, Read, Write};
 
@@ -53,8 +53,6 @@ fn main() -> Result<()> {
         buf[0].push(' ');
     }
 
-    dbg!(&buf);
-
     // Switch terminal modes
     crossterm::terminal::enable_raw_mode().context("Could not enable raw mode")?;
     stdout()
@@ -81,7 +79,7 @@ fn main() -> Result<()> {
     }
 
     term.move_cursor(0, term.size.y - 1);
-    print!("exit: ctrl + c || ");
+    print!("save and exit: ctrl + c || ");
 
     // Print file buffer
     term.move_cursor(0, 2);
@@ -163,6 +161,13 @@ fn main() -> Result<()> {
     }
 
     // region:  -- Shutdown
+
+    let buf_write = buf.into_iter()
+        .map(|x| x.into_iter().collect::<String>())
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    write(Path::new(&args.file), buf_write.as_bytes()).context("Could not write buffer to file")?;
 
     // Switch back terminal modes
     crossterm::terminal::disable_raw_mode().context("Could not disable raw mode")?;

@@ -53,6 +53,8 @@ fn main() -> Result<()> {
         buf[0].push(' ');
     }
 
+    dbg!(&buf);
+
     // Switch terminal modes
     crossterm::terminal::enable_raw_mode().context("Could not enable raw mode")?;
     stdout()
@@ -122,11 +124,25 @@ fn main() -> Result<()> {
                     KeyCode::Up => {
                         if term.pos.y != 2 {  
                             term.move_relative(0, -1);
+                            if buf[(term.pos.y - 2) as usize].is_empty() {
+                                term.move_cursor(0, term.pos.y);
+                            } else if buf[(term.pos.y - 2) as usize].len() < buf_x_pos as usize {
+                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (buf_x_pos as i16), 0)
+                            } else {
+                                term.move_cursor(buf_x_pos, term.pos.y);
+                            }
                         }
                     },
                     KeyCode::Down => {
                         if term.pos.y != term.size.y - 3 && term.pos.y - 1 < buf.len() as u16 {
                             term.move_relative(0, 1);
+                            if buf[(term.pos.y - 2) as usize].is_empty() {
+                                term.move_cursor(0, term.pos.y);
+                            } else if buf[(term.pos.y - 2) as usize].len() < buf_x_pos as usize {
+                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (buf_x_pos as i16), 0)
+                            } else {
+                                term.move_cursor(buf_x_pos, term.pos.y);
+                            }
                         }
                     },
                     KeyCode::Left => {

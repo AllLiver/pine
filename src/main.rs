@@ -131,10 +131,14 @@ fn main() -> Result<()> {
                             term.move_relative(0, 1);
                         }
                     },
-                    KeyCode::Left => { term.move_relative(-1, 0); },
+                    KeyCode::Left => {
+                        term.move_relative(-1, 0);
+                        buf_x_pos = term.pos.x;
+                    },
                     KeyCode::Right => {
                         if term.pos.x + 1 < (buf[(term.pos.y - 2) as usize].len() + 1) as u16 {
                             term.move_relative(1, 0); 
+                            buf_x_pos = term.pos.x;
                         }
                     }
                     _ => {}

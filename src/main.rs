@@ -119,6 +119,9 @@ fn main() -> Result<()> {
                 } // Routes for input modifiers
                 
                 match e.code { // Routes for single keys
+                    KeyCode::Char(c) => {
+                        
+                    }
                     KeyCode::Enter => {
                         buf.insert((term.pos.y - 1) as usize, Vec::new());
                         term.redraw_buf(&buf);

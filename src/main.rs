@@ -21,8 +21,8 @@ fn main() -> Result<()> {
 
     let mut file_created = false;
 
-    let mut term = Terminal::new(crossterm::terminal::size().unwrap());
     let args = Args::parse();
+    let mut term = Terminal::new(crossterm::terminal::size().unwrap(), args.file.clone());
     let file = match File::open(Path::new(&args.file)) {
         // Attempt to open file
         Ok(f) => f, // If file opens, return it
@@ -121,7 +121,7 @@ fn main() -> Result<()> {
                 match e.code { // Routes for single keys
                     KeyCode::Enter => {
                         buf.insert((term.pos.y - 1) as usize, Vec::new());
-                        term.redraw_buf(buf);
+                        term.redraw_buf(&buf);
                     },
                     KeyCode::Up => {
                         if term.pos.y != 2 {  
@@ -199,11 +199,12 @@ struct Pos {
 #[derive(Debug)]
 struct Terminal {
     size: Size,
-    pos: Pos
+    pos: Pos,
+    name: String,
 }
 
 impl Terminal {
-    fn new(size: (u16, u16)) -> Terminal {
+    fn new(size: (u16, u16), name: String) -> Terminal {
         Terminal {
             size: Size {
                 x: size.0,
@@ -212,7 +213,8 @@ impl Terminal {
             pos: Pos {
                 x: 0,
                 y: 0
-            }
+            },
+            name: name,
         }
     }
 
@@ -222,9 +224,29 @@ impl Terminal {
             .unwrap();
     }
 
-    fn redraw_buf(&mut self, buf: Vec<Vec<char>>) {
+    fn redraw_buf(&mut self, buf: &Vec<Vec<char>>) {
         let start_x = self.pos.x;
         let start_y = self.pos.y;
+
+        self.clear();
+
+        self.move_cursor(0, 0);
+        print!("pico: {}", self.name);
+
+        // Print starting screen
+        self.move_cursor(0, 1);
+        for _ in 0..self.size.x {
+            print!("-");
+        }
+
+        // Print info text
+        self.move_cursor(0, self.size.y - 2);
+        for _ in 0..self.size.x {
+            print!("-");
+        }
+
+        self.move_cursor(0, self.size.y - 1);
+        print!("save and exit: ctrl + c || ");
 
         self.move_cursor(0, 2);
         for i in 0..buf.len() {
@@ -237,6 +259,8 @@ impl Terminal {
         }
 
         self.move_cursor(start_x, start_y);
+
+        self.flush();
     }
 
     fn set_name(&self, name: &str) {

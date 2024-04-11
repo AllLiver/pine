@@ -120,7 +120,7 @@ fn main() -> Result<()> {
                 
                 match e.code { // Routes for single keys
                     KeyCode::Char(c) => {
-                        
+                        buf[(term.size.x - 1) as usize].insert()
                     }
                     KeyCode::Enter => {
                         buf.insert((term.pos.y - 1) as usize, Vec::new());

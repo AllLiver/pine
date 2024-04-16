@@ -97,8 +97,6 @@ fn main() -> Result<()> {
     // Flush all terminal prints
     term.flush();
 
-    let mut buf_x_pos = term.pos.x;
-
     // App loop
     loop {
         match event::read().context("Could not read user input")? {
@@ -120,10 +118,23 @@ fn main() -> Result<()> {
                 
                 match e.code { // Routes for single keys
                     KeyCode::Char(c) => {
-                        buf[(term.size.x - 1) as usize].insert()
+                        buf[(term.pos.y - 2) as usize].insert((term.pos.x) as usize, c);
+                        term.move_relative(1, 0);
+                        term.buf_x_pos = term.pos.x;
+                        term.redraw_buf(&buf);
+                    },
+                    KeyCode::Backspace => {
+                        if term.pos.x != 0 {
+                            buf[(term.pos.y - 2) as usize].remove((term.pos.x - 1) as usize);
+                            term.move_relative(-1, 0);
+                            term.buf_x_pos = term.pos.x;
+                            term.redraw_buf(&buf);
+                        }
                     }
                     KeyCode::Enter => {
                         buf.insert((term.pos.y - 1) as usize, Vec::new());
+                        term.move_cursor(0, term.pos.y + 1);
+                        term.buf_x_pos = term.pos.x;
                         term.redraw_buf(&buf);
                     },
                     KeyCode::Up => {
@@ -131,10 +142,10 @@ fn main() -> Result<()> {
                             term.move_relative(0, -1);
                             if buf[(term.pos.y - 2) as usize].is_empty() {
                                 term.move_cursor(0, term.pos.y);
-                            } else if buf[(term.pos.y - 2) as usize].len() < buf_x_pos as usize {
-                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (buf_x_pos as i16), 0)
+                            } else if buf[(term.pos.y - 2) as usize].len() < term.buf_x_pos as usize {
+                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (term.buf_x_pos as i16), 0)
                             } else {
-                                term.move_cursor(buf_x_pos, term.pos.y);
+                                term.move_cursor(term.buf_x_pos, term.pos.y);
                             }
                         }
                     },
@@ -143,21 +154,21 @@ fn main() -> Result<()> {
                             term.move_relative(0, 1);
                             if buf[(term.pos.y - 2) as usize].is_empty() {
                                 term.move_cursor(0, term.pos.y);
-                            } else if buf[(term.pos.y - 2) as usize].len() < buf_x_pos as usize {
-                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (buf_x_pos as i16), 0)
+                            } else if buf[(term.pos.y - 2) as usize].len() < term.buf_x_pos as usize {
+                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (term.buf_x_pos as i16), 0)
                             } else {
-                                term.move_cursor(buf_x_pos, term.pos.y);
+                                term.move_cursor(term.buf_x_pos, term.pos.y);
                             }
                         }
                     },
                     KeyCode::Left => {
                         term.move_relative(-1, 0);
-                        buf_x_pos = term.pos.x;
+                        term.buf_x_pos = term.pos.x;
                     },
                     KeyCode::Right => {
                         if term.pos.x + 1 < (buf[(term.pos.y - 2) as usize].len() + 1) as u16 {
                             term.move_relative(1, 0); 
-                            buf_x_pos = term.pos.x;
+                            term.buf_x_pos = term.pos.x;
                         }
                     }
                     _ => {}
@@ -204,6 +215,7 @@ struct Terminal {
     size: Size,
     pos: Pos,
     name: String,
+    buf_x_pos: u16,
 }
 
 impl Terminal {
@@ -218,6 +230,7 @@ impl Terminal {
                 y: 0
             },
             name: name,
+            buf_x_pos: size.0,
         }
     }
 

@@ -49,8 +49,6 @@ fn main() -> Result<()> {
             .map(|x| x.chars().collect())
             .collect(); // Chop up file contents into chars
 
-    } else {
-        buf[0].push(' ');
     }
 
     // Switch terminal modes
@@ -130,7 +128,7 @@ fn main() -> Result<()> {
                             term.buf_x_pos = term.pos.x;
                             term.redraw_buf(&buf);
                         } else {
-                            
+
                         }
                     }
                     KeyCode::Enter => {

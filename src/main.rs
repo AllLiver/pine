@@ -129,6 +129,8 @@ fn main() -> Result<()> {
                             term.move_relative(-1, 0);
                             term.buf_x_pos = term.pos.x;
                             term.redraw_buf(&buf);
+                        } else {
+                            
                         }
                     }
                     KeyCode::Enter => {

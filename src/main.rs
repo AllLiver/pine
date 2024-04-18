@@ -3,7 +3,7 @@ use clap::Parser;
 use crossterm::{cursor, event, terminal, ExecutableCommand, QueueableCommand};
 use crossterm::event::{Event, KeyCode};
 use std::char;
-use std::fs::File;
+use std::fs::{File, write};
 use std::path::Path;
 use std::io::{stdout, BufReader, Read, Write};
 
@@ -21,8 +21,8 @@ fn main() -> Result<()> {
 
     let mut file_created = false;
 
-    let mut term = Terminal::new(crossterm::terminal::size().unwrap());
     let args = Args::parse();
+    let mut term = Terminal::new(crossterm::terminal::size().unwrap(), args.file.clone());
     let file = match File::open(Path::new(&args.file)) {
         // Attempt to open file
         Ok(f) => f, // If file opens, return it
@@ -49,11 +49,7 @@ fn main() -> Result<()> {
             .map(|x| x.chars().collect())
             .collect(); // Chop up file contents into chars
 
-    } else {
-        buf[0].push(' ');
     }
-
-    dbg!(&buf);
 
     // Switch terminal modes
     crossterm::terminal::enable_raw_mode().context("Could not enable raw mode")?;
@@ -81,7 +77,7 @@ fn main() -> Result<()> {
     }
 
     term.move_cursor(0, term.size.y - 1);
-    print!("exit: ctrl + c || ");
+    print!("save and exit: ctrl + c || ");
 
     // Print file buffer
     term.move_cursor(0, 2);
@@ -98,8 +94,6 @@ fn main() -> Result<()> {
 
     // Flush all terminal prints
     term.flush();
-
-    let mut buf_x_pos = term.pos.x;
 
     // App loop
     loop {
@@ -121,48 +115,98 @@ fn main() -> Result<()> {
                 } // Routes for input modifiers
                 
                 match e.code { // Routes for single keys
+                    KeyCode::Char(c) => {
+                        buf[(term.pos.y - 2) as usize].insert((term.pos.x) as usize, c);
+                        term.move_relative(1, 0);
+                        term.buf_x_pos = term.pos.x;
+                        term.redraw_buf(&buf);
+                    },
+                    KeyCode::Tab => {
+                        for _ in 0..4 {
+                            buf[(term.pos.y - 2) as usize].insert((term.pos.x) as usize, ' ');
+                            term.move_relative(1, 0);
+                            term.redraw_buf(&buf);
+                        }
+                    },
+                    KeyCode::Backspace => {
+                        if term.pos.x == 0 {
+                            if term.pos.y != 2 {
+                                let add_to = buf[(term.pos.y - 2) as usize].clone();
+                                let move_to_x: u16 = buf[(term.pos.y - 3) as usize].len() as u16;
+                                buf[(term.pos.y - 3) as usize].extend(add_to);
+                                buf.remove((term.pos.y - 2) as usize);
+                                term.move_cursor(move_to_x, term.pos.y - 1);
+                                term.buf_x_pos = term.pos.x;
+                                term.redraw_buf(&buf);
+                            }
+                        } else if term.pos.x != 0 {
+                            buf[(term.pos.y - 2) as usize].remove((term.pos.x - 1) as usize);
+                            term.move_relative(-1, 0);
+                            term.buf_x_pos = term.pos.x;
+                            term.redraw_buf(&buf);
+                        } 
+                    }
+                    KeyCode::Enter => {
+                        buf.insert((term.pos.y - 1) as usize, Vec::new());
+                        buf[(term.pos.y - 1) as usize] = buf[(term.pos.y - 2) as usize].split_off(term.pos.x as usize);
+                        term.move_cursor(0, term.pos.y + 1);
+                        term.buf_x_pos = term.pos.x;
+                        term.redraw_buf(&buf);
+                    },
                     KeyCode::Up => {
                         if term.pos.y != 2 {  
                             term.move_relative(0, -1);
-                            if buf[(term.pos.y - 2) as usize].is_empty() {
-                                term.move_cursor(0, term.pos.y);
-                            } else if buf[(term.pos.y - 2) as usize].len() < buf_x_pos as usize {
-                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (buf_x_pos as i16), 0)
+                            let current_line_size = buf[(term.pos.y - 2) as usize].len();
+
+                            if current_line_size < term.buf_x_pos as usize {
+                                term.move_cursor(current_line_size as u16, term.pos.y);
                             } else {
-                                term.move_cursor(buf_x_pos, term.pos.y);
+                                term.move_cursor(term.buf_x_pos, term.pos.y);
                             }
                         }
                     },
                     KeyCode::Down => {
-                        if term.pos.y != term.size.y - 3 && term.pos.y - 1 < buf.len() as u16 {
+                        if term.pos.y != term.size.y - 3 && term.pos.y <= buf.len() as u16 {  
                             term.move_relative(0, 1);
-                            if buf[(term.pos.y - 2) as usize].is_empty() {
-                                term.move_cursor(0, term.pos.y);
-                            } else if buf[(term.pos.y - 2) as usize].len() < buf_x_pos as usize {
-                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (buf_x_pos as i16), 0)
+                            let current_line_size = buf[(term.pos.y - 2) as usize].len();
+
+                            if current_line_size < term.buf_x_pos as usize {
+                                term.move_cursor(current_line_size as u16, term.pos.y);
                             } else {
-                                term.move_cursor(buf_x_pos, term.pos.y);
+                                term.move_cursor(term.buf_x_pos, term.pos.y);
                             }
                         }
                     },
                     KeyCode::Left => {
                         term.move_relative(-1, 0);
-                        buf_x_pos = term.pos.x;
+                        term.buf_x_pos = term.pos.x;
                     },
                     KeyCode::Right => {
                         if term.pos.x + 1 < (buf[(term.pos.y - 2) as usize].len() + 1) as u16 {
                             term.move_relative(1, 0); 
-                            buf_x_pos = term.pos.x;
+                            term.buf_x_pos = term.pos.x;
                         }
                     }
                     _ => {}
                 } // Routes for single keys
             }, // Inputs for all key events
+            Event::Resize(w, h) => {
+                term.size.x = w;
+                term.size.y = h;
+                term.redraw_buf(&buf);
+            }
             _ => {}
         }
     }
 
     // region:  -- Shutdown
+
+    let buf_write = buf.into_iter()
+        .map(|x| x.into_iter().collect::<String>())
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    write(Path::new(&args.file), buf_write.as_bytes()).context("Could not write buffer to file")?;
 
     // Switch back terminal modes
     crossterm::terminal::disable_raw_mode().context("Could not disable raw mode")?;
@@ -190,11 +234,13 @@ struct Pos {
 #[derive(Debug)]
 struct Terminal {
     size: Size,
-    pos: Pos
+    pos: Pos,
+    name: String,
+    buf_x_pos: u16,
 }
 
 impl Terminal {
-    fn new(size: (u16, u16)) -> Terminal {
+    fn new(size: (u16, u16), name: String) -> Terminal {
         Terminal {
             size: Size {
                 x: size.0,
@@ -203,7 +249,9 @@ impl Terminal {
             pos: Pos {
                 x: 0,
                 y: 0
-            }
+            },
+            name: name,
+            buf_x_pos: size.0,
         }
     }
 
@@ -211,6 +259,45 @@ impl Terminal {
         stdout()
             .queue(terminal::Clear(terminal::ClearType::All))
             .unwrap();
+    }
+
+    fn redraw_buf(&mut self, buf: &Vec<Vec<char>>) {
+        let start_x = self.pos.x;
+        let start_y = self.pos.y;
+
+        self.clear();
+
+        self.move_cursor(0, 0);
+        print!("pico: {}", self.name);
+
+        // Print starting screen
+        self.move_cursor(0, 1);
+        for _ in 0..self.size.x {
+            print!("-");
+        }
+
+        // Print info text
+        self.move_cursor(0, self.size.y - 2);
+        for _ in 0..self.size.x {
+            print!("-");
+        }
+
+        self.move_cursor(0, self.size.y - 1);
+        print!("save and exit: ctrl + c || ");
+
+        self.move_cursor(0, 2);
+        for i in 0..buf.len() {
+            if 3 + (i as u16) < self.size.y - 1 {
+                for x in buf[i].clone() {
+                    print!("{}", x);
+                }
+                self.move_cursor(0, 3 + i as u16);
+            }
+        }
+
+        self.move_cursor(start_x, start_y);
+
+        self.flush();
     }
 
     fn set_name(&self, name: &str) {

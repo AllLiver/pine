@@ -121,18 +121,34 @@ fn main() -> Result<()> {
                         term.buf_x_pos = term.pos.x;
                         term.redraw_buf(&buf);
                     },
+                    KeyCode::Tab => {
+                        for _ in 0..4 {
+                            buf[(term.pos.y - 2) as usize].insert((term.pos.x) as usize, ' ');
+                            term.move_relative(1, 0);
+                            term.redraw_buf(&buf);
+                        }
+                    },
                     KeyCode::Backspace => {
-                        if term.pos.x != 0 {
+                        if term.pos.x == 0 {
+                            if term.pos.y != 2 {
+                                let add_to = buf[(term.pos.y - 2) as usize].clone();
+                                let move_to_x: u16 = buf[(term.pos.y - 3) as usize].len() as u16;
+                                buf[(term.pos.y - 3) as usize].extend(add_to);
+                                buf.remove((term.pos.y - 2) as usize);
+                                term.move_cursor(move_to_x, term.pos.y - 1);
+                                term.buf_x_pos = term.pos.x;
+                                term.redraw_buf(&buf);
+                            }
+                        } else if term.pos.x != 0 {
                             buf[(term.pos.y - 2) as usize].remove((term.pos.x - 1) as usize);
                             term.move_relative(-1, 0);
                             term.buf_x_pos = term.pos.x;
                             term.redraw_buf(&buf);
-                        } else {
-
-                        }
+                        } 
                     }
                     KeyCode::Enter => {
                         buf.insert((term.pos.y - 1) as usize, Vec::new());
+                        buf[(term.pos.y - 1) as usize] = buf[(term.pos.y - 2) as usize].split_off(term.pos.x as usize);
                         term.move_cursor(0, term.pos.y + 1);
                         term.buf_x_pos = term.pos.x;
                         term.redraw_buf(&buf);
@@ -140,22 +156,22 @@ fn main() -> Result<()> {
                     KeyCode::Up => {
                         if term.pos.y != 2 {  
                             term.move_relative(0, -1);
-                            if buf[(term.pos.y - 2) as usize].is_empty() {
-                                term.move_cursor(0, term.pos.y);
-                            } else if buf[(term.pos.y - 2) as usize].len() < term.buf_x_pos as usize {
-                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (term.buf_x_pos as i16), 0)
+                            let current_line_size = buf[(term.pos.y - 2) as usize].len();
+
+                            if current_line_size < term.buf_x_pos as usize {
+                                term.move_cursor(current_line_size as u16, term.pos.y);
                             } else {
                                 term.move_cursor(term.buf_x_pos, term.pos.y);
                             }
                         }
                     },
                     KeyCode::Down => {
-                        if term.pos.y != term.size.y - 3 && term.pos.y - 1 < buf.len() as u16 {
+                        if term.pos.y != term.size.y - 2 && term.pos.y <= buf.len() as u16 {  
                             term.move_relative(0, 1);
-                            if buf[(term.pos.y - 2) as usize].is_empty() {
-                                term.move_cursor(0, term.pos.y);
-                            } else if buf[(term.pos.y - 2) as usize].len() < term.buf_x_pos as usize {
-                                term.move_relative((buf[(term.pos.y - 2) as usize].len() as i16) - (term.buf_x_pos as i16), 0)
+                            let current_line_size = buf[(term.pos.y - 2) as usize].len();
+
+                            if current_line_size < term.buf_x_pos as usize {
+                                term.move_cursor(current_line_size as u16, term.pos.y);
                             } else {
                                 term.move_cursor(term.buf_x_pos, term.pos.y);
                             }

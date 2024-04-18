@@ -166,7 +166,7 @@ fn main() -> Result<()> {
                         }
                     },
                     KeyCode::Down => {
-                        if term.pos.y != term.size.y - 2 && term.pos.y <= buf.len() as u16 {  
+                        if term.pos.y != term.size.y - 3 && term.pos.y <= buf.len() as u16 {  
                             term.move_relative(0, 1);
                             let current_line_size = buf[(term.pos.y - 2) as usize].len();
 
@@ -190,6 +190,11 @@ fn main() -> Result<()> {
                     _ => {}
                 } // Routes for single keys
             }, // Inputs for all key events
+            Event::Resize(w, h) => {
+                term.size.x = w;
+                term.size.y = h;
+                term.redraw_buf(&buf);
+            }
             _ => {}
         }
     }

@@ -90,7 +90,7 @@ fn main() -> Result<()> {
         }
     }
 
-    term.move_cursor(buf[buf.len() - 1].len() as u16, (buf.len() + 1) as u16);
+    term.move_cursor(0, 2);
 
     // Flush all terminal prints
     term.flush();
@@ -232,11 +232,21 @@ struct Pos {
 }
 
 #[derive(Debug)]
+struct ViewingRange {
+    xmin: usize,
+    xmax: usize,
+
+    ymin: usize,
+    ymax: usize,
+}
+
+#[derive(Debug)]
 struct Terminal {
     size: Size,
     pos: Pos,
     name: String,
     buf_x_pos: u16,
+    viewing_range: ViewingRange,
 }
 
 impl Terminal {
@@ -252,6 +262,13 @@ impl Terminal {
             },
             name: name,
             buf_x_pos: size.0,
+            viewing_range: ViewingRange {
+                xmin: 0,
+                xmax: size.1 as usize,
+
+                ymin: 0,
+                ymax: size.0 as usize, 
+            },
         }
     }
 
@@ -286,8 +303,8 @@ impl Terminal {
         print!("save and exit: ctrl + c || ");
 
         self.move_cursor(0, 2);
-        for i in 0..buf.len() {
-            if 3 + (i as u16) < self.size.y - 1 {
+        for i in self.viewing_range.ymin..self.viewing_range.ymax {
+            if 3 + (i as u16) < self.size.y - 1 && i < buf.len() as usize {
                 for x in buf[i].clone() {
                     print!("{}", x);
                 }

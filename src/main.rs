@@ -121,7 +121,7 @@ fn main() -> Result<()> {
                 
                 match e.code { // Routes for single keys
                     KeyCode::Char(c) => {
-                        buf[(term.pos.y - 2) as usize].insert((term.pos.x) as usize, c);
+                        buf[(term.pos.y - 2) as usize].insert((term.pos.x + term.viewing_range.xmin as u16) as usize, c);
                         term.move_relative(1, 0);
                         term.buf_x_pos = term.pos.x;
                         term.redraw_buf(&buf);
@@ -185,11 +185,13 @@ fn main() -> Result<()> {
                     KeyCode::Left => {
                         term.move_relative(-1, 0);
                         term.buf_x_pos = term.pos.x;
+                        term.redraw_buf(&buf);
                     },
                     KeyCode::Right => {
-                        if term.pos.x + 1 < (buf[(term.pos.y - 2) as usize].len() + 1) as u16 {
+                        if term.pos.x + 1 + (term.viewing_range.xmin as u16) < (buf[(term.pos.y - 2) as usize].len() + 1) as u16 {
                             term.move_relative(1, 0); 
                             term.buf_x_pos = term.pos.x;
+                            term.redraw_buf(&buf);
                         }
                     }
                     _ => {}

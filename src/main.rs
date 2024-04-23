@@ -286,6 +286,10 @@ impl Terminal {
     }
 
     fn redraw_buf(&mut self, buf: &Vec<Vec<char>>) {
+        if self.pos.x > self.size.x {
+            term
+        }
+
         let start_x = self.pos.x;
         let start_y = self.pos.y;
 
@@ -346,13 +350,8 @@ impl Terminal {
         if posx + relx >= 0 && posx + relx <= self.size.x as i16 {
             posx += relx;
         } else {
-            if relx < 0 && self.viewing_range.xmin > 0 {
-                self.viewing_range.xmin -= 1;
-                self.viewing_range.xmax -= 1;
-            } else if relx > 0 {
-                self.viewing_range.xmin += 1;
-                self.viewing_range.xmax += 1;
-            }
+            self.viewing_range.xmin += relx as usize;
+            self.viewing_range.xmax += relx as usize;
         }
 
         if posy + rely >= 0 && posy + rely <= self.size.y as i16 {

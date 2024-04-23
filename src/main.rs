@@ -80,13 +80,18 @@ fn main() -> Result<()> {
     print!("save and exit: ctrl + c || ");
 
     // Print file buffer
-    term.move_cursor(0, 2);
-    for i in 0..buf.len() {
-        if 3 + (i as u16) < term.size.y - 1 {
-            for x in buf[i].clone() {
-                print!("{}", x);
+    for i in term.viewing_range.ymin..term.viewing_range.ymax {
+        if i < buf.len() as usize {
+            for x in term.viewing_range.xmin..term.viewing_range.xmax {
+                if x < buf[i].len() {
+                    print!("{}", buf[i][x]);
+                } else {
+                    break;
+                }
             }
             term.move_cursor(0, 3 + i as u16);
+        } else {
+            break;
         }
     }
 
@@ -264,10 +269,10 @@ impl Terminal {
             buf_x_pos: size.0,
             viewing_range: ViewingRange {
                 xmin: 0,
-                xmax: size.1 as usize,
+                xmax: size.0 as usize,
 
                 ymin: 0,
-                ymax: size.0 as usize, 
+                ymax: (size.1 - 3) as usize, 
             },
         }
     }
@@ -304,11 +309,17 @@ impl Terminal {
 
         self.move_cursor(0, 2);
         for i in self.viewing_range.ymin..self.viewing_range.ymax {
-            if 3 + (i as u16) < self.size.y - 1 && i < buf.len() as usize {
-                for x in buf[i].clone() {
-                    print!("{}", x);
+            if i < buf.len() as usize {
+                for x in self.viewing_range.xmin..self.viewing_range.xmax {
+                    if x < buf[i].len() {
+                        print!("{}", buf[i][x]);
+                    } else {
+                        break;
+                    }
                 }
                 self.move_cursor(0, 3 + i as u16);
+            } else {
+                break;
             }
         }
 
@@ -332,6 +343,14 @@ impl Terminal {
         let mut posy = self.pos.y as i16;
         if posx + relx >= 0 && posx + relx <= self.size.x as i16 {
             posx += relx;
+        } else {
+            if relx < 0 && self.viewing_range.xmin > 0 {
+                self.viewing_range.xmin -= 1;
+                self.viewing_range.xmax -= 1;
+            } else if relx > 0 {
+                self.viewing_range.xmin += 1;
+                self.viewing_range.xmax += 1;
+            }
         }
 
         if posy + rely >= 0 && posy + rely <= self.size.y as i16 {

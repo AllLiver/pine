@@ -80,6 +80,7 @@ fn main() -> Result<()> {
     print!("save and exit: ctrl + c || ");
 
     // Print file buffer
+    term.move_cursor(0, 2);
     for i in term.viewing_range.ymin..term.viewing_range.ymax {
         if i < buf.len() as usize {
             for x in term.viewing_range.xmin..term.viewing_range.xmax {
@@ -134,7 +135,7 @@ fn main() -> Result<()> {
                         }
                     },
                     KeyCode::Backspace => {
-                        if term.pos.x == 0 {
+                        if term.pos.x == 0 && term.viewing_range.xmin == 0 {
                             if term.pos.y != 2 {
                                 let add_to = buf[(term.pos.y - 2) as usize].clone();
                                 let move_to_x: u16 = buf[(term.pos.y - 3) as usize].len() as u16;
@@ -145,7 +146,7 @@ fn main() -> Result<()> {
                                 term.redraw_buf(&buf);
                             }
                         } else if term.pos.x != 0 {
-                            buf[(term.pos.y - 2) as usize].remove((term.pos.x - 1) as usize);
+                            buf[(term.pos.y - 2) as usize].remove((term.pos.x - 1 + term.viewing_range.xmin as u16) as usize);
                             term.move_relative(-1, 0);
                             term.buf_x_pos = term.pos.x;
                             term.redraw_buf(&buf);
@@ -161,9 +162,9 @@ fn main() -> Result<()> {
                     KeyCode::Up => {
                         if term.pos.y != 2 {  
                             term.move_relative(0, -1);
-                            let current_line_size = buf[(term.pos.y - 2) as usize].len();
+                            let current_line_size = buf[(term.pos.y - 2) as usize].len() - term.viewing_range.xmin;
 
-                            if current_line_size < term.buf_x_pos as usize {
+                            if current_line_size < (term.buf_x_pos as usize) + term.viewing_range.xmin {
                                 term.move_cursor(current_line_size as u16, term.pos.y);
                             } else {
                                 term.move_cursor(term.buf_x_pos, term.pos.y);
@@ -287,7 +288,8 @@ impl Terminal {
 
     fn redraw_buf(&mut self, buf: &Vec<Vec<char>>) {
         if self.pos.x > self.size.x {
-            term
+            self.viewing_range.xmin += (self.pos.x - self.size.x) as usize;
+            self.viewing_range.xmax += (self.pos.x - self.size.x) as usize;
         }
 
         let start_x = self.pos.x;
@@ -347,7 +349,7 @@ impl Terminal {
     fn move_relative(&mut self, relx: i16, rely: i16) {
         let mut posx = self.pos.x as i16;
         let mut posy = self.pos.y as i16;
-        if posx + relx >= 0 && posx + relx <= self.size.x as i16 {
+        if posx + relx >= 0 && posx + relx <= (self.size.x - 1) as i16 {
             posx += relx;
         } else {
             self.viewing_range.xmin += relx as usize;

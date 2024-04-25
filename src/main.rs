@@ -162,9 +162,14 @@ fn main() -> Result<()> {
                     KeyCode::Up => {
                         if term.pos.y != 2 {  
                             term.move_relative(0, -1);
-                            let current_line_size = buf[(term.pos.y - 2) as usize].len() - term.viewing_range.xmin;
+                            let current_line_size: isize = buf[(term.pos.y - 2) as usize].len() as isize - term.viewing_range.xmin as isize;
 
-                            if current_line_size < (term.buf_x_pos as usize) + term.viewing_range.xmin {
+                            if current_line_size < (term.buf_x_pos + term.viewing_range.xmin as u16) as isize {
+                                if current_line_size < 0 {
+                                    term.viewing_range.xmin -= isize::abs(current_line_size) as usize;
+                                    term.viewing_range.xmax -= isize::abs(current_line_size) as usize;
+                                    term.redraw_buf(&buf);
+                                }
                                 term.move_cursor(current_line_size as u16, term.pos.y);
                             } else {
                                 term.move_cursor(term.buf_x_pos, term.pos.y);
@@ -174,9 +179,14 @@ fn main() -> Result<()> {
                     KeyCode::Down => {
                         if term.pos.y != term.size.y - 3 && term.pos.y <= buf.len() as u16 {  
                             term.move_relative(0, 1);
-                            let current_line_size = buf[(term.pos.y - 2) as usize].len();
+                            let current_line_size: isize = buf[(term.pos.y - 2) as usize].len() as isize - term.viewing_range.xmin as isize;
 
-                            if current_line_size < term.buf_x_pos as usize {
+                            if current_line_size < (term.buf_x_pos + term.viewing_range.xmin as u16) as isize {
+                                if current_line_size < 0 {
+                                    term.viewing_range.xmin -= isize::abs(current_line_size) as usize;
+                                    term.viewing_range.xmax -= isize::abs(current_line_size) as usize;
+                                    term.redraw_buf(&buf);
+                                }
                                 term.move_cursor(current_line_size as u16, term.pos.y);
                             } else {
                                 term.move_cursor(term.buf_x_pos, term.pos.y);
@@ -189,7 +199,7 @@ fn main() -> Result<()> {
                         term.redraw_buf(&buf);
                     },
                     KeyCode::Right => {
-                        if term.pos.x + 1 + (term.viewing_range.xmin as u16) < (buf[(term.pos.y - 2) as usize].len() + 1) as u16 {
+                        if term.pos.x as usize + 1 + term.viewing_range.xmin < buf[(term.pos.y - 2) as usize].len() + 1 {
                             term.move_relative(1, 0); 
                             term.buf_x_pos = term.pos.x;
                             term.redraw_buf(&buf);

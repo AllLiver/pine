@@ -57,12 +57,12 @@ fn main() -> Result<()> {
         .execute(crossterm::terminal::EnterAlternateScreen)
         .context("Could not enter alternate screen")?;
     term.clear();
-    term.set_name(&format!("pico || {}", args.file));
+    term.set_name(&format!("pine || {}", args.file));
 
     // endregion:   -- Startup
 
     term.move_cursor(0, 0);
-    print!("pico: {}", args.file);
+    print!("pine: {}", args.file);
 
     // Print starting screen
     term.move_cursor(0, 1);
@@ -160,38 +160,10 @@ fn main() -> Result<()> {
                         term.redraw_buf(&buf);
                     },
                     KeyCode::Up => {
-                        if term.pos.y != 2 {  
-                            term.move_relative(0, -1);
-                            let current_line_size: isize = buf[(term.pos.y - 2) as usize].len() as isize - term.viewing_range.xmin as isize;
-
-                            if current_line_size < (term.buf_x_pos + term.viewing_range.xmin as u16) as isize {
-                                if current_line_size < 0 {
-                                    term.viewing_range.xmin -= isize::abs(current_line_size) as usize;
-                                    term.viewing_range.xmax -= isize::abs(current_line_size) as usize;
-                                    term.redraw_buf(&buf);
-                                }
-                                term.move_cursor(current_line_size as u16, term.pos.y);
-                            } else {
-                                term.move_cursor(term.buf_x_pos, term.pos.y);
-                            }
-                        }
+                        
                     },
                     KeyCode::Down => {
-                        if term.pos.y != term.size.y - 3 && term.pos.y <= buf.len() as u16 {  
-                            term.move_relative(0, 1);
-                            let current_line_size: isize = buf[(term.pos.y - 2) as usize].len() as isize - term.viewing_range.xmin as isize;
-
-                            if current_line_size < (term.buf_x_pos + term.viewing_range.xmin as u16) as isize {
-                                if current_line_size < 0 {
-                                    term.viewing_range.xmin -= isize::abs(current_line_size) as usize;
-                                    term.viewing_range.xmax -= isize::abs(current_line_size) as usize;
-                                    term.redraw_buf(&buf);
-                                }
-                                term.move_cursor(current_line_size as u16, term.pos.y);
-                            } else {
-                                term.move_cursor(term.buf_x_pos, term.pos.y);
-                            }
-                        }
+                        
                     },
                     KeyCode::Left => {
                         term.move_relative(-1, 0);
@@ -308,7 +280,7 @@ impl Terminal {
         self.clear();
 
         self.move_cursor(0, 0);
-        print!("pico: {}", self.name);
+        print!("pine: {}", self.name);
 
         // Print starting screen
         self.move_cursor(0, 1);

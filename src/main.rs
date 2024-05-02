@@ -161,17 +161,21 @@ fn main() -> Result<()> {
                     },
                     KeyCode::Up => {
                         if term.pos.y > 2 {
-                            term.move_relative(0, -1);
-                            if term.buf_x_pos > (buf[(term.pos.y - 2) as usize].len() - 1) as u16 {
-                                term.move_relative(term.pos.y as i16 - (buf[(term.pos.y - 2) as usize].len() + 1) as i16, 0);
+                            term.move_cursor(term.buf_x_pos, term.pos.y - 1);
+
+                            if term.pos.x as usize + term.viewing_range.xmin > buf[(term.pos.y - 2) as usize].len() - 1 {
+                                term.move_relative(((term.pos.x as usize + term.viewing_range.xmin) - buf[(term.pos.y - 2) as usize].len()) as i16 * -1, 0);
+                                //println!("{}", (term.pos.x as usize - buf[(term.pos.y - 2) as usize].len()) as i16);
                             }
                         }
                     },
                     KeyCode::Down => {
-                        if term.pos.y < term.size.y - 3 && term.pos.y - 2 < (buf.len() - 1) as u16 {
-                            term.move_relative(0, 1);
-                            if term.buf_x_pos > buf[(term.pos.y - 2) as usize].len() as u16 {
-                                term.move_relative(term.pos.y as i16 - (buf[(term.pos.y - 2) as usize].len() + 1) as i16, 0);
+                        if term.pos.y < (buf.len() + 1) as u16 {
+                            term.move_cursor(term.buf_x_pos, term.pos.y + 1);
+
+                            if term.pos.x as usize + term.viewing_range.xmin > buf[(term.pos.y - 2) as usize].len() - 1 {
+                                term.move_relative(((term.pos.x as usize + term.viewing_range.xmin) - buf[(term.pos.y - 2) as usize].len()) as i16 * -1, 0);
+                                //println!("{}", (term.pos.x as usize - buf[(term.pos.y - 2) as usize].len()) as i16);
                             }
                         }
                     },
@@ -343,7 +347,7 @@ impl Terminal {
         let mut posy = self.pos.y as i16;
         if posx + relx >= 0 && posx + relx <= (self.size.x - 1) as i16 {
             posx += relx;
-        } else {
+        } else if !(self.viewing_range.xmin == 0 && relx < 0) {
             self.viewing_range.xmin += relx as usize;
             self.viewing_range.xmax += relx as usize;
         }

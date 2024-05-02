@@ -160,10 +160,20 @@ fn main() -> Result<()> {
                         term.redraw_buf(&buf);
                     },
                     KeyCode::Up => {
-                        
+                        if term.pos.y > 2 {
+                            term.move_relative(0, -1);
+                            if term.buf_x_pos > (buf[(term.pos.y - 2) as usize].len() - 1) as u16 {
+                                term.move_relative(term.pos.y as i16 - (buf[(term.pos.y - 2) as usize].len() + 1) as i16, 0);
+                            }
+                        }
                     },
                     KeyCode::Down => {
-                        
+                        if term.pos.y < term.size.y - 3 && term.pos.y - 2 < (buf.len() - 1) as u16 {
+                            term.move_relative(0, 1);
+                            if term.buf_x_pos > buf[(term.pos.y - 2) as usize].len() as u16 {
+                                term.move_relative(term.pos.y as i16 - (buf[(term.pos.y - 2) as usize].len() + 1) as i16, 0);
+                            }
+                        }
                     },
                     KeyCode::Left => {
                         term.move_relative(-1, 0);
@@ -251,7 +261,7 @@ impl Terminal {
                 y: 0
             },
             name: name,
-            buf_x_pos: size.0,
+            buf_x_pos: 0,
             viewing_range: ViewingRange {
                 xmin: 0,
                 xmax: size.0 as usize,

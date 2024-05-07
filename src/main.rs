@@ -127,12 +127,12 @@ fn main() -> Result<()> {
                         buf[(term.pos.y - 2) as usize]
                             .insert((term.pos.x + term.viewing_range.xmin as u16) as usize, c);
                         term.move_relative(1, 0);
-                        term.buf_x_pos = term.pos.x;
+                        term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
                         term.redraw_buf(&buf);
                     }
                     KeyCode::Tab => {
                         for _ in 0..4 {
-                            buf[(term.pos.y - 2) as usize].insert((term.pos.x) as usize, ' ');
+                            buf[(term.pos.y - 2) as usize].insert((term.pos.x + term.viewing_range.xmin as u16) as usize, ' ');
                             term.move_relative(1, 0);
                             term.redraw_buf(&buf);
                         }
@@ -141,32 +141,34 @@ fn main() -> Result<()> {
                         if term.pos.x == 0 && term.viewing_range.xmin == 0 {
                             if term.pos.y != 2 {
                                 let add_to = buf[(term.pos.y - 2) as usize].clone();
-                                let move_to_x: u16 = buf[(term.pos.y - 3) as usize].len() as u16;
+                                let move_to_x: usize = buf[(term.pos.y - 3) as usize].len();
                                 buf[(term.pos.y - 3) as usize].extend(add_to);
                                 buf.remove((term.pos.y - 2) as usize);
-                                term.move_cursor(move_to_x, term.pos.y - 1);
-                                term.buf_x_pos = term.pos.x;
+                                term.move_relative((move_to_x - term.pos.x as usize) as i16, -1);
+                                term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
                                 term.redraw_buf(&buf);
                             }
                         } else if term.pos.x != 0 {
                             buf[(term.pos.y - 2) as usize]
                                 .remove((term.pos.x - 1 + term.viewing_range.xmin as u16) as usize);
                             term.move_relative(-1, 0);
-                            term.buf_x_pos = term.pos.x;
+                            term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
                             term.redraw_buf(&buf);
                         }
                     }
                     KeyCode::Enter => {
                         buf.insert((term.pos.y - 1) as usize, Vec::new());
                         buf[(term.pos.y - 1) as usize] =
-                            buf[(term.pos.y - 2) as usize].split_off(term.pos.x as usize);
-                        term.move_cursor(0, term.pos.y + 1);
-                        term.buf_x_pos = term.pos.x;
+                            buf[(term.pos.y - 2) as usize].split_off((term.pos.x as usize + term.viewing_range.xmin) as usize);
+                        term.move_cursor( 0, term.pos.y + 1);
+                        term.viewing_range.xmin = 0;
+                        term.viewing_range.xmax = term.size.x as usize;
+                        term.buf_x_pos = 0;
                         term.redraw_buf(&buf);
                     }
                     KeyCode::Up => {
                         if term.pos.y > 2 {
-                            term.move_cursor(term.buf_x_pos, term.pos.y - 1);
+                            term.move_relative((term.buf_x_pos - term.pos.x as usize) as i16, -1);
 
                             if (term.pos.x as usize + term.viewing_range.xmin) as isize
                                 > buf[(term.pos.y - 2) as usize].len() as isize - 1
@@ -180,11 +182,12 @@ fn main() -> Result<()> {
                                 );
                                 //println!("{}", (term.pos.x as usize - buf[(term.pos.y - 2) as usize].len()) as i16);
                             }
+                            term.redraw_buf(&buf);
                         }
                     }
                     KeyCode::Down => {
                         if term.pos.y < (buf.len() + 1) as u16 {
-                            term.move_cursor(term.buf_x_pos, term.pos.y + 1);
+                            term.move_relative((term.buf_x_pos - term.pos.x as usize) as i16, 1);
 
                             if (term.pos.x as usize + term.viewing_range.xmin) as isize
                                 > buf[(term.pos.y - 2) as usize].len() as isize - 1
@@ -198,11 +201,12 @@ fn main() -> Result<()> {
                                 );
                                 //println!("{}", (term.pos.x as usize - buf[(term.pos.y - 2) as usize].len()) as i16);
                             }
+                            term.redraw_buf(&buf);
                         }
                     }
                     KeyCode::Left => {
                         term.move_relative(-1, 0);
-                        term.buf_x_pos = term.pos.x;
+                        term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
                         term.redraw_buf(&buf);
                     }
                     KeyCode::Right => {
@@ -210,7 +214,7 @@ fn main() -> Result<()> {
                             < buf[(term.pos.y - 2) as usize].len() + 1
                         {
                             term.move_relative(1, 0);
-                            term.buf_x_pos = term.pos.x;
+                            term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
                             term.redraw_buf(&buf);
                         }
                     }
@@ -273,7 +277,7 @@ struct Terminal {
     size: Size,
     pos: Pos,
     name: String,
-    buf_x_pos: u16,
+    buf_x_pos: usize,
     viewing_range: ViewingRange,
 }
 
@@ -363,30 +367,27 @@ impl Terminal {
         stdout().execute(cursor::MoveTo(posx, posy)).unwrap();
     }
 
-    fn move_relative(&mut self, relx: i16, rely: i16) { // TO DO: redo this function
+    fn move_relative(&mut self, mut relx: i16, rely: i16) {
         let mut posx = self.pos.x as i16;
         let mut posy = self.pos.y as i16;
-        if posx + relx >= 0 && posx + relx <= (self.size.x - 1) as i16 {
+
+        if posx + relx < self.size.x as i16 && posx + relx >= 0 {
             posx += relx;
-        } else if !(self.viewing_range.xmin == 0 && relx < 0) { 
-            if relx < 0 {
-                println!(
-                    "moving range DOWN: {} out of range {}",
-                    relx, self.viewing_range.xmin
-                );
-                self.viewing_range.xmin -= i16::abs(relx) as usize;
-                self.viewing_range.xmax -= i16::abs(relx) as usize;
-            } else if relx > 0 {
-                println!(
-                    "moving range UP: {} out of range {}",
-                    relx, self.viewing_range.xmin
-                );
-                self.viewing_range.xmin += i16::abs(relx) as usize;
-                self.viewing_range.xmax += i16::abs(relx) as usize;
-            }
+        } else if posx + relx >= self.size.x as i16 {
+            relx -= (self.size.x - 1) as i16 - posx;
+            posx = (self.size.x - 1) as i16;
+
+            self.viewing_range.xmin += i16::abs(relx) as usize;
+            self.viewing_range.xmax += i16::abs(relx) as usize;
+        } else if posx + relx < 0 && self.viewing_range.xmin != 0 {
+            relx += posx;
+            posx = 0;
+
+            self.viewing_range.xmin -= i16::abs(relx) as usize;
+            self.viewing_range.xmax -= i16::abs(relx) as usize;
         }
 
-        if posy + rely >= 0 && posy + rely <= self.size.y as i16 {
+        if posy + rely < self.size.y as i16 && posy + rely > 0 {
             posy += rely;
         }
 

@@ -99,7 +99,7 @@ fn main() -> Result<()> {
     // Flush all terminal prints
     term.flush();
 
-    // App loop
+    // App loop :) this was made with my text editor
     loop {
         match event::read().context("Could not read user input")? {
             Event::Key(e) => {
@@ -299,7 +299,7 @@ impl Terminal {
                 xmax: size.0 as usize,
 
                 ymin: 0,
-                ymax: (size.1 - 2) as usize,
+                ymax: (size.1 - 4) as usize,
             },
         }
     }
@@ -339,8 +339,7 @@ impl Terminal {
         self.move_cursor(0, self.size.y - 1);
         print!("save and exit: ctrl + c || ");
 
-        //let cursor_indicator_str = format!("{}:{}", start_x as usize + self.viewing_range.xmin + 1, start_y as usize + self.viewing_range.ymin - 1);
-        let cursor_indicator_str = format!("{}:{}", self.viewing_range.ymin, self.viewing_range.ymax);
+        let cursor_indicator_str = format!("{}:{}", start_x as usize + self.viewing_range.xmin + 1, start_y as usize + self.viewing_range.ymin - 1);
         self.move_cursor((self.size.x as usize - cursor_indicator_str.len()) as u16, self.size.y - 1);
         print!("{cursor_indicator_str}");
 

@@ -72,7 +72,7 @@ fn main() -> Result<()> {
     }
 
     term.move_cursor(0, term.size.y - 1);
-    print!("save and exit: ctrl + c || ");
+    print!("save and exit: ctrl + x || exit without saving: ctrl + n || save: ctrl + s");
 
     term.move_cursor(term.size.x - 3, term.size.y - 1);
     print!("1:1");
@@ -99,8 +99,8 @@ fn main() -> Result<()> {
     // Flush all terminal prints
     term.flush();
 
-    // App loop :) this was made with my text editor
-    loop {
+    // App loop
+    let exit_code: char = loop {
         match event::read().context("Could not read user input")? {
             Event::Key(e) => {
                 // Inputs for all key events
@@ -112,8 +112,23 @@ fn main() -> Result<()> {
                             event::KeyCode::Char(c) => {
                                 // Routes for ctrl + char inputs
                                 match c {
-                                    'c' => {
-                                        break;
+                                    'x' => {
+                                        break 's';
+                                    },
+                                    'n' => {
+                                        break 'n';
+                                    },
+                                    's' => {
+                                        let buf_write = buf.clone()
+                                            .into_iter()
+                                            .map(|x| x.into_iter().collect::<String>())
+                                            .collect::<Vec<String>>()
+                                            .join("\n");
+
+                                        write(Path::new(&args.file), buf_write.as_bytes()).context("Could not write buffer to file")?;
+                                        term.unsaved_edits = false;
+                                        term.redraw_buf(&buf);
+                                        continue;
                                     }
                                     _ => {}
                                 }
@@ -131,12 +146,14 @@ fn main() -> Result<()> {
                             .insert((term.pos.x + term.viewing_range.xmin as u16) as usize, c);
                         term.move_relative(1, 0);
                         term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
+                        term.unsaved_edits = true;
                         term.redraw_buf(&buf);
                     }
                     KeyCode::Tab => {
                         for _ in 0..4 {
                             buf[(term.pos.y - 2 + term.viewing_range.ymin as u16) as usize].insert((term.pos.x + term.viewing_range.xmin as u16) as usize, ' ');
                             term.move_relative(1, 0);
+                            term.unsaved_edits = true;
                             term.redraw_buf(&buf);
                         }
                     }
@@ -149,6 +166,7 @@ fn main() -> Result<()> {
                                 buf.remove((term.pos.y - 2 + term.viewing_range.ymin as u16) as usize);
                                 term.move_relative((move_to_x - term.pos.x as usize) as i16, -1);
                                 term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
+                                term.unsaved_edits = true;
                                 term.redraw_buf(&buf);
                             }
                         } else if term.pos.x != 0 {
@@ -156,6 +174,7 @@ fn main() -> Result<()> {
                                 .remove((term.pos.x - 1 + term.viewing_range.xmin as u16) as usize);
                             term.move_relative(-1, 0);
                             term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
+                            term.unsaved_edits = true;
                             term.redraw_buf(&buf);
                         }
                     }
@@ -167,6 +186,7 @@ fn main() -> Result<()> {
                         term.viewing_range.xmin = 0;
                         term.viewing_range.xmax = term.size.x as usize;
                         term.buf_x_pos = 0;
+                        term.unsaved_edits = true;
                         term.redraw_buf(&buf);
                     }
                     KeyCode::Up => {
@@ -237,17 +257,19 @@ fn main() -> Result<()> {
             }
             _ => {}
         }
-    }
+    };
 
     // region:  -- Shutdown
 
-    let buf_write = buf
-        .into_iter()
-        .map(|x| x.into_iter().collect::<String>())
-        .collect::<Vec<String>>()
-        .join("\n");
+    if exit_code == 's' {
+        let buf_write = buf
+            .into_iter()
+            .map(|x| x.into_iter().collect::<String>())
+            .collect::<Vec<String>>()
+            .join("\n");
 
-    write(Path::new(&args.file), buf_write.as_bytes()).context("Could not write buffer to file")?;
+        write(Path::new(&args.file), buf_write.as_bytes()).context("Could not write buffer to file")?;
+    }
 
     // Switch back terminal modes
     crossterm::terminal::disable_raw_mode().context("Could not disable raw mode")?;
@@ -288,6 +310,7 @@ struct Terminal {
     name: String,
     buf_x_pos: usize,
     viewing_range: ViewingRange,
+    unsaved_edits: bool,
 }
 
 impl Terminal {
@@ -307,6 +330,7 @@ impl Terminal {
                 ymin: 0,
                 ymax: (size.1 - 4) as usize,
             },
+            unsaved_edits: false,
         }
     }
 
@@ -328,7 +352,7 @@ impl Terminal {
         self.clear();
 
         self.move_cursor(0, 0);
-        print!("pine: {}", self.name);
+        print!("pine: {}{}", self.name, if self.unsaved_edits { "*" } else { "" });
 
         // Print starting screen
         self.move_cursor(0, 1);
@@ -343,7 +367,7 @@ impl Terminal {
         }
 
         self.move_cursor(0, self.size.y - 1);
-        print!("save and exit: ctrl + c || ");
+        print!("save and exit: ctrl + x || exit without saving: ctrl + n || save: ctrl + s");
 
         let cursor_indicator_str = format!("{}:{}", start_x as usize + self.viewing_range.xmin + 1, start_y as usize + self.viewing_range.ymin - 1);
         self.move_cursor((self.size.x as usize - cursor_indicator_str.len()) as u16, self.size.y - 1);

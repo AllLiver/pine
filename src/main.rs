@@ -146,7 +146,7 @@ fn main() -> Result<()> {
                                 let add_to = buf[(term.pos.y - 2 + term.viewing_range.ymin as u16) as usize].clone();
                                 let move_to_x: usize = buf[(term.pos.y - 3 + term.viewing_range.ymin as u16) as usize].len();
                                 buf[(term.pos.y - 3 + term.viewing_range.ymin as u16) as usize].extend(add_to);
-                                buf.remove((term.pos.y - 2) as usize);
+                                buf.remove((term.pos.y - 2 + term.viewing_range.ymin as u16) as usize);
                                 term.move_relative((move_to_x - term.pos.x as usize) as i16, -1);
                                 term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
                                 term.redraw_buf(&buf);
@@ -225,8 +225,14 @@ fn main() -> Result<()> {
                 } // Routes for single keys
             } // Inputs for all key events
             Event::Resize(w, h) => {
+                term.viewing_range.xmax = w as usize;
+                term.viewing_range.ymax = (h - 4) as usize;
+
                 term.size.x = w;
                 term.size.y = h;
+
+                term.move_cursor(0, 2);
+
                 term.redraw_buf(&buf);
             }
             _ => {}

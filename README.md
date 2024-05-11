@@ -3,8 +3,12 @@
 A simple CLI text editor inspired by GNU Nano
 
 # Features
- - Idiomatic error handling using anyhow
- - Intuitive CLI interface using clap 
+ - Idiomatic error handling using anyhow  
+ - Intuitive CLI interface using clap  
+ - Lightweight  
+ - Easy keybinds  
+ - Cross-platform terminal manupulation using crossterm  
+ - Fast writing with Rust's powerful standard library  
 
 # Class Diagram
 

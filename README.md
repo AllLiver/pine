@@ -10,6 +10,13 @@ A simple CLI text editor inspired by GNU Nano
  - Cross-platform terminal manupulation using crossterm  
  - Fast writing with Rust's powerful standard library  
 
+# Installation
+Verify you have rust and git installed  
+and then run this command:
+```
+git clone https://github.com/allliver/pine && cd pine && cargo install --path .
+```
+
 # Class Diagram
 
 ![Pine UML](https://github.com/AllLiver/pine/blob/6969745805aa178cb04b7f41a30f9eb14c2bafd4/img/pico-uml.png "Pine UML")

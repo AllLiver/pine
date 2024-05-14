@@ -19,31 +19,33 @@ struct Args {
 fn main() -> Result<()> {
     // region:  -- Startup
 
-    let mut file_created = false;
-
     let args = Args::parse();
     let mut term = Terminal::new(crossterm::terminal::size().unwrap(), args.file.clone());
-    let file = match File::open(Path::new(&args.file)) {
+    let file: Option<File> = match File::open(Path::new(&args.file)) {
         // Attempt to open file
-        Ok(f) => f, // If file opens, return it
+        Ok(f) => Some(f), // If file opens, return it
         Err(_) => {
             // If it does not, create it and return that
-            file_created = true;
-            File::create(Path::new(&args.file)).context("Could not create file")?
+            None
         }
     };
 
     let mut buf: Vec<Vec<char>> = vec![Vec::new()];
 
-    if !file_created {
-        let mut buf_str = String::new();
+    
 
-        let mut buf_reader = BufReader::new(file); // Create a new BufReader for the file
-        buf_reader
-            .read_to_string(&mut buf_str)
-            .context("Could not read file buffer")?; // Read to a string
+    match file {
+        Some(f) => {
+            let mut buf_str = String::new();
 
-        buf = buf_str.split("\n").map(|x| x.chars().collect()).collect(); // Chop up file contents into chars
+            let mut buf_reader = BufReader::new(f); // Create a new BufReader for the file
+            buf_reader
+                .read_to_string(&mut buf_str)
+                .context("Could not read file buffer")?; // Read to a string
+
+            buf = buf_str.split("\n").map(|x| x.chars().collect()).collect(); // Chop up file contents into chars
+        },
+        None => {}
     }
 
     // Switch terminal modes

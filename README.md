@@ -8,7 +8,7 @@ A simple CLI text editor inspired by GNU Nano
  - Lightweight  
  - Easy keybinds  
  - Cross-platform terminal manupulation using crossterm  
- - Fast writing with Rust's powerful standard library  
+ - Fast file reading/writing with Rust's powerful standard library  
 
 # Installation
 Verify you have rust, gcc or other basic c build tools, and git installed  

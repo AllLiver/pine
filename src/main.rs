@@ -142,6 +142,21 @@ fn main() -> Result<()> {
                             }
                         }
                     } // Routes for ctrl modifiers
+                    event::KeyModifiers::SHIFT => {
+                        match e.code {
+                            KeyCode::Right => {
+                                term.move_relative(buf[(term.pos.y - 2 + term.viewing_range.ymin as u16) as usize].len() as i16 - term.pos.x as i16 - term.viewing_range.xmin as i16, 0);
+                                term.buf_x_pos = term.pos.x as usize + term.viewing_range.xmin;
+                                term.redraw_buf(&buf);
+                            }
+                            KeyCode::Left => {
+                                term.move_relative((term.pos.x as i16 + term.viewing_range.xmin as i16) * -1, 0);
+                                term.buf_x_pos = 0;
+                                term.redraw_buf(&buf);
+                            }
+                            _ => {}
+                        }
+                    },
                     _ => {}
                 } // Routes for input modifiers
 
@@ -197,7 +212,7 @@ fn main() -> Result<()> {
                     }
                     KeyCode::Up => {
                         //if term.pos.y > 1 {
-                            term.move_relative((term.buf_x_pos - term.pos.x as usize) as i16, -1);
+                            term.move_relative((term.buf_x_pos - term.pos.x as usize - term.viewing_range.xmin) as i16, -1);
 
                             if (term.pos.x as usize + term.viewing_range.xmin) as isize
                                 > buf[(term.pos.y - 2 + term.viewing_range.ymin as u16) as usize].len() as isize - 1
@@ -216,7 +231,7 @@ fn main() -> Result<()> {
                     }
                     KeyCode::Down => {
                         if term.pos.y as usize + term.viewing_range.ymin < (buf.len() + 1) as usize {
-                            term.move_relative((term.buf_x_pos - term.pos.x as usize) as i16, 1);
+                            term.move_relative((term.buf_x_pos - term.pos.x as usize - term.viewing_range.xmin) as i16, 1);
 
                             if (term.pos.x as usize + term.viewing_range.xmin) as isize
                                 > buf[(term.pos.y - 2 + term.viewing_range.ymin as u16) as usize].len() as isize - 1

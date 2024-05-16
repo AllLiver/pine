@@ -111,7 +111,7 @@ fn main() -> Result<()> {
                     event::KeyModifiers::CONTROL => {
                         // Routes for ctrl modifiers
                         match e.code {
-                            event::KeyCode::Char(c) => {
+                            KeyCode::Char(c) => {
                                 // Routes for ctrl + char inputs
                                 match c {
                                     'x' => {
@@ -132,10 +132,14 @@ fn main() -> Result<()> {
                                         term.redraw_buf(&buf);
                                         continue;
                                     }
-                                    _ => {}
+                                    _ => {
+                                        continue;
+                                    }
                                 }
                             }
-                            _ => {}
+                            _ => {
+                                continue;
+                            }
                         }
                     } // Routes for ctrl modifiers
                     _ => {}
@@ -257,7 +261,9 @@ fn main() -> Result<()> {
 
                 term.redraw_buf(&buf);
             }
-            _ => {}
+            _ => {
+                continue;
+            }
         }
     };
 

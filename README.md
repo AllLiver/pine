@@ -11,7 +11,7 @@ A simple CLI text editor inspired by GNU Nano
  - Fast writing with Rust's powerful standard library  
 
 # Installation
-Verify you have rust and git installed  
+Verify you have rust, gcc or other basic c build tools, and git installed  
 and then run this command:
 ```
 git clone https://github.com/allliver/pine && cd pine && cargo install --path .

@@ -12,9 +12,13 @@ A simple CLI text editor inspired by GNU Nano
 
 # Installation
 Verify you have rust, gcc or other basic c build tools, and git installed  
-and then run this command:
+Then run this command:
 ```
 git clone https://github.com/allliver/pine && cd pine && cargo install --path .
+```
+This command will provide documentation on all of the program's arguments
+```
+pine -h
 ```
 
 # Class Diagram

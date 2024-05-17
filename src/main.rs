@@ -437,8 +437,8 @@ impl Terminal {
 
         let cursor_indicator_str = format!(
             "{}:{}",
-            start_x as usize + self.viewing_range.xmin + 1,
-            start_y as usize + self.viewing_range.ymin - 1
+            start_y as usize + self.viewing_range.ymin - 1,
+            start_x as usize + self.viewing_range.xmin + 1
         );
         self.move_cursor(
             (self.size.x as usize - cursor_indicator_str.len()) as u16,

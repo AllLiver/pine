@@ -74,6 +74,7 @@ fn main() -> Result<()> {
     term.move_cursor(0, term.size.y - 1);
     print!("save and exit: ctrl + x || exit without saving: ctrl + n || save: ctrl + s");
 
+    // Print line and column indicator
     term.move_cursor(term.size.x - 3, term.size.y - 1);
     print!("1:1");
 
@@ -113,10 +114,10 @@ fn main() -> Result<()> {
                                 // Routes for ctrl + char inputs
                                 match c {
                                     'x' => {
-                                        break 's';
+                                        break 's'; // Break with exit code s to save
                                     }
                                     'n' => {
-                                        break 'n';
+                                        break 'n'; // Break with exit code n to not save
                                     }
                                     's' => {
                                         let buf_write = buf

@@ -8,7 +8,9 @@ A simple CLI text editor inspired by GNU Nano
  - Lightweight  
  - Easy keybinds  
  - Cross-platform terminal manupulation using crossterm  
- - Fast file reading/writing with Rust's powerful standard library  
+ - Fast file reading/writing with Rust's powerful standard library
+
+Please note that WSL bash may give you a better experience on Windows
 
 # Installation
 Verify you have rust, gcc or other basic c build tools, and git installed  
